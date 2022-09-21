@@ -1,0 +1,83 @@
+# Load balancer -> Auto scaling
+# EC2
+# Security Group
+# RDS, EFS, S3
+
+Parameters:
+  LoadBalancerName:
+    Type: String
+  LoadBalancerTargetGroupName:
+    Type: String
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  VpcId: 
+    Type: AWS::EC2::VPC::Id
+#  InstanceTargets:
+#    Type: AWS::EC2::Instance::Id
+
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Ref LoadBalancerName
+      SecurityGroups: 
+        - !Ref SecurityGroup
+      Subnets: !Ref Subnets
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - LoadBalancerTargetGroup
+      - LoadBalancer
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: forward 
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref LoadBalancerTargetGroup
+                Weight: 1
+
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Ref LoadBalancerTargetGroupName
+      Port: 80
+      Protocol: HTTP
+      HealthCheckPort: 80 
+      VpcId: !Ref VpcId 
+      TargetType: instance
+      Targets:
+        - Id: !Ref EC2Instance
+          Port: 80
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1b
+      ImageId: ami-02538f8925e3aa27a
+      InstanceType: t2.micro
+      KeyName: ada
+      Tags: 
+        - Key: Name
+          Value: MyInstance
+      UserData: !Base64
+        'Fn::Join': 
+        - ''
+        - - |
+            #!/bin/bash
+          - |
+            sudo yum update -y
+          - |
+            sudo yum install httpd -y
+          - |
+            sudo httpd
+          - |
+            echo 'Hello World!' > /var/www/html/index.html
+  SecurityGroup:
+
+
+  IAMPolicy:
+  EC2Role:

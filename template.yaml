@@ -1,19 +1,20 @@
 Parameters:
   LoadBalancerName:
     Type: String
+    Default: 'LoadBalancerFinalProject'
   LoadBalancerTargetGroupName:
     Type: String
+    Default: 'LoadBalancerTargetGroupFinalProject'
   Subnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
   VpcId: 
     Type: AWS::EC2::VPC::Id
-#  InstanceTargets:
-#    Type: AWS::EC2::Instance::Id
   CidrIp:
     Type: String
     Default: 0.0.0.0
   LaunchTemplateName:
     Type: String
+    Default: 'LaunchTemplateFinalProject'
   LaunchTemplateImageId:
     Type: AWS::EC2::Image::Id
   
@@ -21,8 +22,6 @@ Parameters:
 Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn:
-      - SecurityGroupLoadBalancer
     Properties:
       Name: !Ref LoadBalancerName
       SecurityGroups: 
@@ -33,7 +32,6 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     DependsOn:
       - LoadBalancerTargetGroup
-      - LoadBalancer
     Properties:
       LoadBalancerArn: !Ref LoadBalancer
       Protocol: HTTP
@@ -53,13 +51,14 @@ Resources:
       Protocol: HTTP
       HealthCheckPort: 80 
       VpcId: !Ref VpcId 
+      TargetType: instance
 
   SecurityGroupLoadBalancer:
       Type: AWS::EC2::SecurityGroup
       Properties:
+        GroupName: MySGLoadBalancer
         GroupDescription: MySGLoadBalancer
         VpcId: !Ref VpcId
-        GroupName: MySGLoadBalancer
         SecurityGroupIngress:
           - IpProtocol: tcp
             FromPort: 80
@@ -86,19 +85,27 @@ Resources:
     Type: AWS::EC2::LaunchTemplate
     Properties: 
       LaunchTemplateName: !Ref LaunchTemplateName
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: AutoScalingInstance
       LaunchTemplateData:
         ImageId: !Ref LaunchTemplateImageId
         InstanceType: t2.micro
         KeyName: ada
         SecurityGroupIds:
           - !Ref SecurityGroupInstance
+        IamInstanceProfile:
+          Arn: !GetAtt
+            - InstanceProfile
+            - Arn
         
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     DependsOn:
       - LaunchTemplate
-      - LoadBalancer
-      - LoadBalancerListener
+      - LoadBalancerTargetGroup
     Properties:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
@@ -109,5 +116,43 @@ Resources:
       TargetGroupARNs:
         - !Ref LoadBalancerTargetGroup
       VPCZoneIdentifier: !Ref Subnets
-      LoadBalancerNames:
-        - !Ref LoadBalancer
+
+  InstanceProfile : 
+    Type : "AWS::IAM::InstanceProfile"
+    Properties : 
+      Path : "/"
+      Roles : 
+        - !Ref IAMRole
+
+  IAMRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+
+  IAMPolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: "root"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - s3:GetObject
+              - s3:ListBucket
+            Resource: 
+              - arn:aws:s3:::exercicio-ada/*
+              - arn:aws:s3:::exercicio-ada
+      Roles: 
+        - !Ref "IAMRole"
+
+// [ ] Change health check

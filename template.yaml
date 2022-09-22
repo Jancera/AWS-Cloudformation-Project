@@ -51,6 +51,7 @@ Resources:
       Protocol: HTTP
       VpcId: !Ref VpcId 
       TargetType: instance
+      HealthCheckEnabled: true
       HealthCheckPath: /status
       HealthCheckPort: 80
       HealthCheckProtocol: HTTP
@@ -94,7 +95,7 @@ Resources:
     Properties: 
       LaunchTemplateName: !Ref LaunchTemplateName
       TagSpecifications:
-        - ResourceType: launch-template
+        - ResourceType: instance
           Tags:
             - Key: Name
               Value: AutoScalingInstance
@@ -124,7 +125,6 @@ Resources:
       TargetGroupARNs:
         - !Ref LoadBalancerTargetGroup
       VPCZoneIdentifier: !Ref Subnets
-
 
   #IAM
   InstanceProfile : 

@@ -96,9 +96,9 @@ Resources:
       LaunchTemplateName: !Ref LaunchTemplateName
       TagSpecifications:
         - ResourceType: instance
-          Tags:
-            - Key: Name
-              Value: AutoScalingInstance
+      Tags:
+        - Key: Name
+          Value: AutoScalingInstance
       LaunchTemplateData:
         ImageId: !Ref LaunchTemplateImageId
         InstanceType: t2.micro

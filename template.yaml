@@ -19,6 +19,7 @@ Parameters:
     Type: AWS::EC2::Image::Id
   
 Resources:
+  #LoadBalancer
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -48,10 +49,15 @@ Resources:
       Name: !Ref LoadBalancerTargetGroupName
       Port: 80
       Protocol: HTTP
-      HealthCheckPort: 80 
       VpcId: !Ref VpcId 
       TargetType: instance
+      HealthCheckPath: /status
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthyThresholdCount: 3
+      HealthCheckIntervalSeconds: 6
 
+  #SecurityGroup
   SecurityGroupLoadBalancer:
       Type: AWS::EC2::SecurityGroup
       Properties:
@@ -79,7 +85,8 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref SecurityGroupLoadBalancer
-
+  
+  #Autoscaling
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     DependsOn: 
@@ -118,6 +125,8 @@ Resources:
         - !Ref LoadBalancerTargetGroup
       VPCZoneIdentifier: !Ref Subnets
 
+
+  #IAM
   InstanceProfile : 
     Type : "AWS::IAM::InstanceProfile"
     Properties : 
@@ -155,5 +164,3 @@ Resources:
               - arn:aws:s3:::exercicio-ada
       Roles: 
         - !Ref "IAMRole"
-
-// [ ] Change health check

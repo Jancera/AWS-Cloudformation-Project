@@ -4,7 +4,7 @@ Parameters:
     Default: 'LoadBalancerFinalProject'
   LoadBalancerTargetGroupName:
     Type: String
-    Default: 'LoadBalancerTargetGroupFinalProject'
+    Default: 'TargetGroupFinalProject'
   Subnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
   VpcId: 
@@ -18,7 +18,6 @@ Parameters:
   LaunchTemplateImageId:
     Type: AWS::EC2::Image::Id
   
-
 Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -83,6 +82,8 @@ Resources:
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
+    DependsOn: 
+      - InstanceProfile
     Properties: 
       LaunchTemplateName: !Ref LaunchTemplateName
       TagSpecifications:
